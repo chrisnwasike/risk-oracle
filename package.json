@@ -1,0 +1,15 @@
+{
+  "name": "risk-oracle",
+  "version": "1.0.0",
+  "description": "Deterministic Risk Tier Oracle Middleware",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "seed": "ts-node src/seed.ts"
+  },
+  "keywords": ["blockchain", "oracle", "risk"],
+  "author": "",
+  "license": "MIT"
+}

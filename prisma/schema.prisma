@@ -1,0 +1,58 @@
+// Prisma schema for Risk Oracle
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Wallet model - stores address and current risk tier
+model Wallet {
+  id        Int      @id @default(autoincrement())
+  address   String   @unique // Ethereum address (lowercase)
+  tier      Int      @default(0) // 0=Unknown, 1=Restricted, 2=Standard, 3=Trusted, 4=Advanced
+  
+  // Metadata for classification
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @default(now())
+  txCount   Int      @default(0)
+  
+  // Relationship to transactions
+  transactions Transaction[]
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  @@index([address])
+  @@index([tier])
+}
+
+// Transaction model - stores wallet activity for classification
+model Transaction {
+  id          Int      @id @default(autoincrement())
+  
+  walletId    Int
+  wallet      Wallet   @relation(fields: [walletId], references: [id], onDelete: Cascade)
+  
+  txHash      String   @unique // Transaction hash
+  blockNumber Int
+  timestamp   DateTime
+  
+  // Transaction details for behavior analysis
+  action      String   // e.g., "swap", "transfer", "provide_liquidity"
+  valueUsd    Float    @default(0) // Approximate USD value
+  gasUsed     Int      @default(0)
+  
+  // Flags for pattern detection
+  isFlip      Boolean  @default(false) // Rapid buy-sell of same asset
+  isSuspicious Boolean @default(false) // Flagged by detector
+  
+  createdAt   DateTime @default(now())
+  
+  @@index([walletId])
+  @@index([timestamp])
+  @@index([blockNumber])
+}
