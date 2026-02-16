@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import prisma from './db';
+import { classifyWallet, explainTier } from './classifier';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -51,6 +52,26 @@ app.get('/wallets', async (req: Request, res: Response) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'Database query failed' });
+  }
+});
+
+// Get tier for a specific wallet
+app.get('/tier/:address', async (req: Request, res: Response) => {
+  try {
+    const address = String(req.params.address).toLowerCase();
+    
+    // Classify in real-time (deterministic)
+    const tier = await classifyWallet(address);
+    const explanation = await explainTier(address);
+    
+    res.json({
+      address,
+      tier,
+      explanation
+    });
+  } catch (error) {
+    console.error('Error querying tier:', error);
+    res.status(500).json({ error: 'Failed to classify wallet' });
   }
 });
 
