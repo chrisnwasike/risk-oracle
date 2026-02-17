@@ -2,9 +2,19 @@ import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import prisma from './db';
 import { classifyWallet, explainTier } from './classifier';
+import { validateAddress, simpleRateLimit } from './middleware/validation';
+import { validateEnv, config } from './config';
 
 // Load environment variables from .env file
 dotenv.config();
+
+// Validate required environment variables
+try {
+  validateEnv();
+} catch (error: any) {
+  console.error('❌ Configuration error:', error.message);
+  process.exit(1);
+}
 
 // Create Express application
 const app = express();
@@ -56,30 +66,57 @@ app.get('/wallets', async (req: Request, res: Response) => {
 });
 
 // Get tier for a specific wallet
-app.get('/tier/:address', async (req: Request, res: Response) => {
-  try {
-    const address = String(req.params.address).toLowerCase();
-    
-    // Classify in real-time (deterministic)
-    const tier = await classifyWallet(address);
-    const explanation = await explainTier(address);
-    
-    res.json({
-      address,
-      tier,
-      explanation
-    });
-  } catch (error) {
-    console.error('Error querying tier:', error);
-    res.status(500).json({ error: 'Failed to classify wallet' });
+app.get('/tier/:address', 
+  simpleRateLimit(100, 60000), // 100 requests per minute
+  validateAddress,
+  async (req: Request, res: Response) => {
+    try {
+      const address = Array.isArray(req.params.address) 
+        ? req.params.address[0] 
+        : req.params.address;
+      
+      // Classify in real-time (deterministic)
+      const tier = await classifyWallet(address.toLowerCase());
+      const explanation = await explainTier(address);
+      
+      res.json({
+        address,
+        tier,
+        explanation
+      });
+    } catch (error) {
+      console.error('Error querying tier:', error);
+      res.status(500).json({ error: 'Failed to classify wallet' });
+    }
   }
-});
+);
 
 // Get port from environment or use default
-const PORT = process.env.PORT || 3000;
+const PORT = config.server.port;
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('SIGTERM received. Closing server...');
+  server.close(async () => {
+    console.log('Server closed. Disconnecting from database...');
+    await prisma.$disconnect();
+    console.log('Database disconnected. Exiting.');
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', async () => {
+  console.log('\nSIGINT received. Closing server...');
+  server.close(async () => {
+    console.log('Server closed. Disconnecting from database...');
+    await prisma.$disconnect();
+    console.log('Database disconnected. Exiting.');
+    process.exit(0);
+  });
 });
