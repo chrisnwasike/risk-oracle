@@ -1,12 +1,12 @@
-# Risk Oracle
+# Risk Oracle for the Robinhood Chain
 
-Deterministic Risk Tier Oracle Middleware for EVM chains. Classifies wallet behavior into safety tiers (0-4) that protocols can use to gate financial actions.
+Deterministic Risk Tier Oracle Middleware for Robinhood Chain and other EVM chains. Classifies wallet behavior into safety tiers (0-4) that protocols can use to gate financial actions.
 
 ## What This Is
 
-A blockchain infrastructure primitive that:
+A Robinhood Chain infrastructure primitive that:
 - Observes wallet transaction behavior off-chain
-- Classifies wallets into deterministic tiers (0=Unknown, 1=Restricted, 2=Standard, 3=Trusted, 4=Advanced)
+- Classifies wallets on the Robinhood Chain into deterministic tiers (0=Unknown, 1=Restricted, 2=Standard, 3=Trusted, 4=Advanced)
 - Serves tiers on-chain via a minimal read-only oracle contract
 - Enables protocols to safely allow/deny actions based on behavioral stability
 
@@ -17,7 +17,7 @@ A blockchain infrastructure primitive that:
 - Analytics or gamification
 
 **This IS:**
-- A safety gate for protocols
+- A safety gate for protocols on the Robinhood Chain
 - A dependency other protocols integrate to operate safely
 
 ## Architecture
@@ -212,7 +212,7 @@ forge test -vv
 
 ### Deploy Contract
 
-1. Get testnet ETH from faucet
+1. Get Robinhood Chain testnet ETH from faucet `https://faucet.testnet.chain.robinhood.com/`
 2. Deploy:
 ```bash
 cd contracts
