@@ -338,7 +338,7 @@ When Risk Oracle deploys to a new chain, you can update the address.
 - **Quick questions:** [Discord](https://discord.gg/riskoracle)
 - **Integration support:** DM [@RiskOracle](https://twitter.com/riskoracle)
 - **Bug reports:** [GitHub Issues](https://github.com/chrisnwasike/risk-oracle/issues)
-- **Email:** integrations@riskoracle.io
+- **Email:** chrisnwasike@gmail.com
 
 ---
 

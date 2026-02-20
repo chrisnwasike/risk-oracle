@@ -154,10 +154,9 @@ Built on:
 
 ## 📬 Contact
 
-- Twitter: [@riskoracle](https://twitter.com/chrisnwasike)
-- Discord: [Join our server](https://discord.gg/chrisnwasike)
+- Twitter: [@chrisnwasike](https://twitter.com/chrisnwasike)
 - Email: chrisnwasike@gmail.com
-- Website: [riskoracle.io](https://riskoracle.io)
+- Website: [riskoracle](https://chrisnwasike.github.io/risk-oracle/)
 
 ---
 

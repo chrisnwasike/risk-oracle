@@ -721,7 +721,7 @@ contract MyDEX {
 
 **Questions?**
 - GitHub: https://github.com/chrisnwasike/risk-oracle
-- Email: dev@riskoracle.io
+- Email: chrisnwasike@gmail.com
 
 **Found a bug?**
 - Open an issue: https://github.com/chrisnwasike/risk-oracle/issues
