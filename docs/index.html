@@ -1,0 +1,1504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Risk Oracle - Deterministic behavioral safety layer for DeFi protocols.">
+  <title>Risk Oracle — DeFi Safety Infrastructure</title>
+
+  <!-- Bootstrap 5.3 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+  <!-- Google Fonts: Syne (display) + DM Sans (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+
+  <style>
+    /* ═══════════════════════════════════════════
+       DESIGN TOKENS
+    ══════════════════════════════════════════════ */
+    :root {
+      /* Colors */
+      --c-primary:        #3B7BFF;
+      --c-primary-light:  #6B9FFF;
+      --c-primary-dark:   #1A56E8;
+      --c-secondary:      #7C3AED;
+      --c-surface-0:      #070C18;
+      --c-surface-1:      #0D1526;
+      --c-surface-2:      #152039;
+      --c-surface-glass:  rgba(21,32,57,0.55);
+      --c-text-primary:   #EEF2FF;
+      --c-text-secondary: #8DA4C8;
+      --c-text-muted:     #4C6280;
+      --c-border:         rgba(59,123,255,0.18);
+      --c-border-subtle:  rgba(255,255,255,0.06);
+      --c-success:        #10D98C;
+      --c-warning:        #F5A623;
+      --c-danger:         #F5455C;
+
+      /* Gradients */
+      --g-primary:   linear-gradient(135deg, #3B7BFF 0%, #7C3AED 100%);
+      --g-hero:      linear-gradient(135deg, #0D1526 0%, #0a0f1e 60%, #0f0820 100%);
+      --g-shine:     linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.09) 50%, transparent 60%);
+
+      /* Shadows */
+      --shadow-sm:      0 1px 3px rgba(0,0,0,0.4), 0 0 0 1px var(--c-border-subtle);
+      --shadow-md:      0 4px 16px rgba(0,0,0,0.5), 0 0 0 1px var(--c-border-subtle);
+      --shadow-lg:      0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px var(--c-border-subtle);
+      --shadow-glow:    0 0 40px rgba(59,123,255,0.2);
+      --shadow-glow-sm: 0 0 20px rgba(59,123,255,0.12);
+
+      /* Radii */
+      --r-sm:   6px;
+      --r-md:   12px;
+      --r-lg:   20px;
+      --r-xl:   28px;
+      --r-pill: 999px;
+
+      /* Spacing (8px base) */
+      --sp-1: 8px;  --sp-2: 16px; --sp-3: 24px; --sp-4: 32px;
+      --sp-5: 48px; --sp-6: 64px; --sp-7: 96px; --sp-8: 128px;
+
+      /* Type scale */
+      --fs-xs:   0.75rem;
+      --fs-sm:   0.875rem;
+      --fs-base: 1rem;
+      --fs-lg:   1.125rem;
+      --fs-xl:   1.375rem;
+      --fs-2xl:  1.75rem;
+      --fs-hero: clamp(2.5rem, 6vw, 4.5rem);
+
+      /* Motion */
+      --dur-fast:   140ms;
+      --dur-normal: 280ms;
+      --dur-slow:   480ms;
+      --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);
+      --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+
+      --container-max: 1200px;
+      --section-vpad:  96px;
+    }
+
+    /* ═══════════════════════════════════════════
+       BASE
+    ══════════════════════════════════════════════ */
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      font-size: var(--fs-base);
+      line-height: 1.7;
+      color: var(--c-text-primary);
+      background: var(--c-surface-0);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle noise texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.022;
+      pointer-events: none;
+      z-index: 9998;
+    }
+
+    h1,h2,h3,h4,h5 {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      letter-spacing: -0.022em;
+      line-height: 1.15;
+      color: var(--c-text-primary);
+    }
+
+    a { text-decoration: none; }
+    .container { max-width: var(--container-max); }
+
+    /* ═══════════════════════════════════════════
+       NAVBAR
+    ══════════════════════════════════════════════ */
+    #navbar {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      padding: 20px 0;
+      background: transparent;
+      border-bottom: 1px solid transparent;
+      transition:
+        background var(--dur-slow) var(--ease-out),
+        border-color var(--dur-slow) var(--ease-out),
+        box-shadow var(--dur-slow) var(--ease-out),
+        padding var(--dur-slow) var(--ease-out);
+    }
+
+    #navbar.scrolled {
+      background: rgba(7, 12, 24, 0.78);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--c-border-subtle);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+      padding: 12px 0;
+    }
+
+    .nav-logo {
+      font-family: 'Syne', sans-serif;
+      font-weight: 800;
+      font-size: 1.2rem;
+      letter-spacing: -0.02em;
+      color: var(--c-text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo-icon {
+      width: 32px; height: 32px;
+      background: var(--g-primary);
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      font-size: 1rem;
+      box-shadow: var(--shadow-glow-sm);
+    }
+
+    .nav-link-item {
+      color: var(--c-text-secondary);
+      font-size: var(--fs-sm);
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: var(--r-pill);
+      transition: color var(--dur-fast), background var(--dur-fast);
+    }
+
+    .nav-link-item:hover {
+      color: var(--c-text-primary);
+      background: rgba(255,255,255,0.06);
+    }
+
+    .nav-cta {
+      background: var(--g-primary);
+      color: #fff !important;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+      transition: box-shadow var(--dur-normal) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+    }
+
+    .nav-cta::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--g-shine);
+      background-size: 300% 100%;
+      background-position: -100% 0;
+      transition: background-position var(--dur-slow) var(--ease-out);
+    }
+
+    .nav-cta:hover {
+      box-shadow: var(--shadow-glow);
+      transform: translateY(-1px);
+    }
+
+    .nav-cta:hover::after { background-position: 200% 0; }
+
+    /* ═══════════════════════════════════════════
+       HERO
+    ══════════════════════════════════════════════ */
+    #hero {
+      min-height: 100svh;
+      background: var(--g-hero);
+      display: flex;
+      align-items: center;
+      padding-top: 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #hero::before {
+      content: '';
+      position: absolute;
+      top: -20%; left: -10%;
+      width: 60%; height: 80%;
+      background: radial-gradient(ellipse at center, rgba(59,123,255,0.13) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    #hero::after {
+      content: '';
+      position: absolute;
+      bottom: -10%; right: -5%;
+      width: 50%; height: 60%;
+      background: radial-gradient(ellipse at center, rgba(124,58,237,0.1) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--c-primary-light);
+      background: rgba(59,123,255,0.1);
+      border: 1px solid rgba(59,123,255,0.25);
+      padding: 5px 14px;
+      border-radius: var(--r-pill);
+      margin-bottom: 24px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      width: 6px; height: 6px;
+      background: var(--c-primary);
+      border-radius: 50%;
+      animation: pulse-dot 2.2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.45; transform:scale(0.65); }
+    }
+
+    .hero-title {
+      font-size: var(--fs-hero);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.05;
+      margin-bottom: 24px;
+    }
+
+    .hero-title .accent {
+      background: var(--g-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: var(--fs-lg);
+      color: var(--c-text-secondary);
+      line-height: 1.65;
+      max-width: 460px;
+      margin-bottom: 40px;
+    }
+
+    .hero-visual { position: relative; will-change: transform; }
+
+    .hero-card {
+      background: rgba(21,32,57,0.6);
+      -webkit-backdrop-filter: blur(24px) saturate(160%);
+      backdrop-filter: blur(24px) saturate(160%);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-xl);
+      padding: 28px;
+      box-shadow: var(--shadow-lg), var(--shadow-glow-sm);
+    }
+
+    .hero-card-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot-r { background: #FF5F57; }
+    .dot-y { background: #FEBC2E; }
+    .dot-g { background: #28C840; }
+
+    .hero-card pre {
+      background: rgba(0,0,0,0.45);
+      border-radius: var(--r-md);
+      padding: 20px;
+      font-size: 0.8rem;
+      line-height: 1.75;
+      margin: 0;
+      color: #c9d1d9;
+      overflow-x: auto;
+      font-family: 'Menlo', 'Monaco', monospace;
+    }
+
+    .floating-badge {
+      position: absolute;
+      background: rgba(13,21,38,0.85);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border: 1px solid var(--c-border);
+      border-radius: var(--r-md);
+      padding: 10px 16px;
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      box-shadow: var(--shadow-md);
+      white-space: nowrap;
+    }
+
+    .badge-safe {
+      top: -18px; right: -12px;
+      color: var(--c-success);
+      border-color: rgba(16,217,140,0.3);
+    }
+
+    .badge-tier {
+      bottom: -18px; left: -12px;
+      color: var(--c-primary-light);
+    }
+
+    /* ═══════════════════════════════════════════
+       BUTTONS
+    ══════════════════════════════════════════════ */
+    .btn-ro {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: var(--fs-sm);
+      font-weight: 600;
+      padding: 12px 24px;
+      border-radius: var(--r-pill);
+      border: none;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition:
+        transform var(--dur-fast) var(--ease-out),
+        box-shadow var(--dur-normal) var(--ease-out);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .btn-ro::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--g-shine);
+      background-size: 300% 100%;
+      background-position: -100% 0;
+      transition: background-position var(--dur-slow) var(--ease-out);
+    }
+
+    .btn-ro:hover { transform: translateY(-2px); }
+    .btn-ro:hover::after { background-position: 200% 0; }
+    .btn-ro:active { transform: translateY(0) scale(0.98); }
+
+    .btn-primary-ro {
+      background: var(--g-primary);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(59,123,255,0.28);
+    }
+
+    .btn-primary-ro:hover {
+      box-shadow: 0 8px 32px rgba(59,123,255,0.45);
+      color: #fff;
+    }
+
+    .btn-ghost-ro {
+      background: rgba(255,255,255,0.06);
+      color: var(--c-text-primary);
+      border: 1px solid var(--c-border-subtle);
+    }
+
+    .btn-ghost-ro:hover {
+      background: rgba(255,255,255,0.1);
+      color: var(--c-text-primary);
+    }
+
+    .btn-white {
+      background: #fff;
+      color: var(--c-primary-dark);
+      font-weight: 700;
+    }
+
+    .btn-white:hover {
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      color: var(--c-primary-dark);
+    }
+
+    .btn-outline-white {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.35);
+      color: #fff;
+    }
+
+    .btn-outline-white:hover {
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+    }
+
+    /* ═══════════════════════════════════════════
+       SECTIONS
+    ══════════════════════════════════════════════ */
+    .section { padding: var(--section-vpad) 0; }
+
+    .section-label {
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--c-primary);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 16px;
+    }
+
+    .section-sub {
+      font-size: var(--fs-lg);
+      color: var(--c-text-secondary);
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    .divider {
+      width: 40px; height: 3px;
+      background: var(--g-primary);
+      border-radius: 2px;
+      margin: 20px 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       GLASS CARD
+    ══════════════════════════════════════════════ */
+    .glass-card {
+      background: rgba(21,32,57,0.55);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      backdrop-filter: blur(20px) saturate(150%);
+      border: 1px solid var(--c-border-subtle);
+      border-radius: var(--r-lg);
+      transition:
+        border-color var(--dur-normal) var(--ease-out),
+        box-shadow var(--dur-normal) var(--ease-out),
+        transform var(--dur-normal) var(--ease-out);
+    }
+
+    .glass-card:hover {
+      border-color: var(--c-border);
+      box-shadow: var(--shadow-lg), var(--shadow-glow-sm);
+      transform: translateY(-4px);
+    }
+
+    /* ═══════════════════════════════════════════
+       FEATURE GRID (3-col)
+    ══════════════════════════════════════════════ */
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    @media (max-width: 991px) { .feature-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 575px) { .feature-grid { grid-template-columns: 1fr; } }
+
+    .feature-card { padding: 32px; }
+
+    .feature-icon {
+      width: 48px; height: 48px;
+      background: rgba(59,123,255,0.1);
+      border: 1px solid rgba(59,123,255,0.2);
+      border-radius: var(--r-md);
+      display: grid;
+      place-items: center;
+      font-size: 1.375rem;
+      margin-bottom: 20px;
+      transition: background var(--dur-normal), box-shadow var(--dur-normal);
+    }
+
+    .glass-card:hover .feature-icon {
+      background: rgba(59,123,255,0.2);
+      box-shadow: 0 0 20px rgba(59,123,255,0.2);
+    }
+
+    .feature-card h3 { font-size: var(--fs-xl); margin-bottom: 10px; }
+    .feature-card p { color: var(--c-text-secondary); font-size: var(--fs-sm); line-height: 1.75; margin: 0; }
+
+    /* ═══════════════════════════════════════════
+       HOW IT WORKS — Steps
+    ══════════════════════════════════════════════ */
+    .steps-wrapper {
+      background: var(--c-surface-1);
+      border: 1px solid var(--c-border-subtle);
+      border-radius: var(--r-xl);
+      padding: 48px;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      position: relative;
+    }
+
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 30px;
+      left: calc(12.5% + 16px);
+      right: calc(12.5% + 16px);
+      height: 1px;
+      background: linear-gradient(90deg, var(--c-primary), var(--c-secondary));
+      opacity: 0.3;
+    }
+
+    @media (max-width: 767px) {
+      .steps-grid { grid-template-columns: 1fr 1fr; }
+      .steps-grid::before { display: none; }
+      .steps-wrapper { padding: 28px; }
+    }
+
+    @media (max-width: 479px) { .steps-grid { grid-template-columns: 1fr; } }
+
+    .step-item { text-align: center; }
+
+    .step-num {
+      width: 60px; height: 60px;
+      background: var(--g-primary);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-family: 'Syne', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      margin: 0 auto 20px;
+      box-shadow: 0 4px 20px rgba(59,123,255,0.35);
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-item h3 { font-size: var(--fs-base); margin-bottom: 8px; }
+    .step-item p { color: var(--c-text-secondary); font-size: var(--fs-sm); line-height: 1.7; }
+
+    /* ═══════════════════════════════════════════
+       TIER TABLE
+    ══════════════════════════════════════════════ */
+    .tier-table-wrap {
+      background: var(--c-surface-1);
+      border: 1px solid var(--c-border-subtle);
+      border-radius: var(--r-xl);
+      overflow: hidden;
+    }
+
+    .tier-head {
+      display: grid;
+      grid-template-columns: 80px 140px 1fr 200px;
+      gap: 16px;
+      padding: 16px 28px;
+      background: rgba(59,123,255,0.06);
+      border-bottom: 1px solid var(--c-border-subtle);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--c-text-muted);
+    }
+
+    .tier-row {
+      display: grid;
+      grid-template-columns: 80px 140px 1fr 200px;
+      gap: 16px;
+      padding: 20px 28px;
+      border-bottom: 1px solid var(--c-border-subtle);
+      align-items: center;
+      transition: background var(--dur-fast);
+    }
+
+    .tier-row:last-child { border-bottom: none; }
+    .tier-row:hover { background: rgba(255,255,255,0.02); }
+
+    .tier-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px; height: 40px;
+      border-radius: var(--r-md);
+      font-family: 'Syne', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 800;
+    }
+
+    .tier-0 { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.2); }
+    .tier-1 { background: rgba(245,69,92,0.12); color: #F5455C; border: 1px solid rgba(245,69,92,0.25); }
+    .tier-2 { background: rgba(59,123,255,0.12); color: var(--c-primary-light); border: 1px solid rgba(59,123,255,0.25); }
+    .tier-3 { background: rgba(16,217,140,0.1); color: var(--c-success); border: 1px solid rgba(16,217,140,0.25); }
+    .tier-4 { background: rgba(245,166,35,0.1); color: var(--c-warning); border: 1px solid rgba(245,166,35,0.25); }
+
+    .tier-name { font-weight: 600; font-size: var(--fs-sm); }
+    .tier-desc { color: var(--c-text-secondary); font-size: var(--fs-sm); }
+    .tier-req { color: var(--c-text-muted); font-size: var(--fs-xs); font-family: 'Menlo', monospace; }
+
+    @media (max-width: 767px) {
+      .tier-head { display: none; }
+      .tier-row {
+        grid-template-columns: 50px 1fr;
+        grid-template-rows: auto auto;
+        gap: 8px;
+        padding: 16px 20px;
+      }
+      .tier-desc, .tier-req { grid-column: 2; }
+    }
+
+    /* ═══════════════════════════════════════════
+       CODE CARDS
+    ══════════════════════════════════════════════ */
+    .code-section-bg {
+      background: var(--c-surface-1);
+      padding: var(--section-vpad) 0;
+    }
+
+    .code-card-ro {
+      background: var(--c-surface-0);
+      border: 1px solid var(--c-border-subtle);
+      border-radius: var(--r-lg);
+      overflow: hidden;
+    }
+
+    .code-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--c-border-subtle);
+      background: rgba(0,0,0,0.25);
+    }
+
+    .code-lang {
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--c-primary-light);
+    }
+
+    .code-dots { display: flex; gap: 6px; }
+
+    .code-body pre {
+      background: transparent;
+      padding: 24px;
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.8;
+      overflow-x: auto;
+      color: #a8b4c8;
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    }
+
+    .kw  { color: #c792ea; }
+    .fn  { color: #82aaff; }
+    .str { color: #c3e88d; }
+    .cm  { color: #4c6280; font-style: italic; }
+    .num { color: #f78c6c; }
+
+    /* ═══════════════════════════════════════════
+       PARTNER CARDS
+    ══════════════════════════════════════════════ */
+    .partner-card-ro {
+      padding: 32px 28px;
+      text-align: center;
+    }
+
+    .partner-icon { font-size: 2.5rem; margin-bottom: 16px; display: block; }
+    .partner-card-ro h3 { font-size: var(--fs-lg); margin-bottom: 8px; }
+    .partner-card-ro p { color: var(--c-text-secondary); font-size: var(--fs-sm); margin: 0; }
+
+    /* ═══════════════════════════════════════════
+       FAQ ACCORDION
+    ══════════════════════════════════════════════ */
+    .faq-wrap { max-width: 720px; margin: 0 auto; }
+
+    .faq-item {
+      background: var(--c-surface-1);
+      border: 1px solid var(--c-border-subtle);
+      border-radius: var(--r-md);
+      margin-bottom: 12px;
+      overflow: hidden;
+      transition: border-color var(--dur-normal) var(--ease-out);
+    }
+
+    .faq-item.open { border-color: var(--c-border); }
+
+    .faq-q {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 20px 24px;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: var(--fs-base);
+      font-weight: 600;
+      color: var(--c-text-primary);
+      background: none;
+      border: none;
+      text-align: left;
+      gap: 16px;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .faq-icon {
+      width: 24px; height: 24px;
+      background: rgba(59,123,255,0.1);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 0.75rem;
+      color: var(--c-primary-light);
+      flex-shrink: 0;
+      transition: transform var(--dur-normal) var(--ease-out), background var(--dur-normal);
+    }
+
+    .faq-item.open .faq-icon {
+      transform: rotate(45deg);
+      background: rgba(59,123,255,0.2);
+    }
+
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height var(--dur-slow) var(--ease-out);
+    }
+
+    .faq-item.open .faq-a { max-height: 600px; }
+
+    .faq-a-inner {
+      padding: 0 24px 20px;
+      color: var(--c-text-secondary);
+      font-size: var(--fs-sm);
+      line-height: 1.8;
+    }
+
+    /* ═══════════════════════════════════════════
+       CTA BANNER
+    ══════════════════════════════════════════════ */
+    .cta-banner {
+      background: var(--g-primary);
+      border-radius: var(--r-xl);
+      padding: 72px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-banner::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='60' height='60' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='1'/%3E%3C/svg%3E");
+    }
+
+    .cta-banner > * { position: relative; z-index: 1; }
+    .cta-banner h2 { font-size: clamp(1.75rem, 4vw, 2.75rem); margin-bottom: 16px; }
+    .cta-banner p { color: rgba(255,255,255,0.8); font-size: var(--fs-lg); margin-bottom: 36px; }
+
+    @media (max-width: 575px) {
+      .cta-banner { padding: 48px 24px; }
+    }
+
+    /* ═══════════════════════════════════════════
+       FOOTER
+    ══════════════════════════════════════════════ */
+    footer {
+      background: var(--c-surface-1);
+      border-top: 1px solid var(--c-border-subtle);
+      padding: 72px 0 32px;
+    }
+
+    .footer-brand p {
+      color: var(--c-text-secondary);
+      font-size: var(--fs-sm);
+      max-width: 240px;
+      line-height: 1.75;
+    }
+
+    .footer-heading {
+      font-family: 'Syne', sans-serif;
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--c-text-muted);
+      margin-bottom: 16px;
+    }
+
+    .footer-links { list-style: none; padding: 0; margin: 0; }
+    .footer-links li { margin-bottom: 10px; }
+    .footer-links a { color: var(--c-text-secondary); font-size: var(--fs-sm); transition: color var(--dur-fast); }
+    .footer-links a:hover { color: var(--c-text-primary); }
+
+    .footer-bottom {
+      border-top: 1px solid var(--c-border-subtle);
+      padding-top: 28px;
+      margin-top: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      color: var(--c-text-muted);
+      font-size: var(--fs-xs);
+    }
+
+    .social-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--c-border-subtle);
+      border-radius: var(--r-pill);
+      color: var(--c-text-secondary);
+      font-size: var(--fs-xs);
+      font-weight: 500;
+      transition: all var(--dur-fast) var(--ease-out);
+    }
+
+    .social-pill:hover {
+      background: rgba(59,123,255,0.1);
+      border-color: var(--c-border);
+      color: var(--c-text-primary);
+    }
+
+    .code-addr {
+      font-family: 'Menlo', monospace;
+      font-size: var(--fs-xs);
+      background: rgba(255,255,255,0.07);
+      padding: 3px 10px;
+      border-radius: var(--r-sm);
+      color: var(--c-text-secondary);
+    }
+
+    /* ═══════════════════════════════════════════
+       SCROLL REVEAL
+    ══════════════════════════════════════════════ */
+    [data-reveal] {
+      opacity: 0;
+      transform: translateY(28px);
+      transition:
+        opacity var(--dur-slow) var(--ease-out),
+        transform var(--dur-slow) var(--ease-out);
+    }
+
+    [data-reveal="visible"] {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ═══════════════════════════════════════════
+       REDUCED MOTION
+    ══════════════════════════════════════════════ */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+
+      [data-reveal] { opacity: 1; transform: none; }
+      .parallax-target { transform: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════
+       NAVBAR
+  ════════════════ -->
+  <nav id="navbar">
+    <div class="container d-flex align-items-center justify-content-between">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon">🛡️</div>
+        Risk Oracle
+      </a>
+
+      <ul class="d-none d-md-flex list-unstyled mb-0 align-items-center gap-1">
+        <li><a href="#problem"     class="nav-link-item">Problem</a></li>
+        <li><a href="#how"         class="nav-link-item">How It Works</a></li>
+        <li><a href="#tiers"       class="nav-link-item">Tiers</a></li>
+        <li><a href="#integration" class="nav-link-item">Integrate</a></li>
+        <li>
+          <a href="https://github.com/chrisnwasike/risk-oracle" class="nav-link-item nav-cta" target="_blank" rel="noopener noreferrer">
+            GitHub →
+          </a>
+        </li>
+      </ul>
+
+      <button class="btn-ghost-ro btn-ro d-md-none" id="mobileToggle" aria-label="Menu" aria-expanded="false" aria-controls="mobileMenu">☰</button>
+    </div>
+
+    <div id="mobileMenu" style="display:none; border-top:1px solid var(--c-border-subtle); margin-top:12px;">
+      <div class="container py-3 d-flex flex-column gap-2">
+        <a href="#problem"     class="nav-link-item">Problem</a>
+        <a href="#how"         class="nav-link-item">How It Works</a>
+        <a href="#tiers"       class="nav-link-item">Tiers</a>
+        <a href="#integration" class="nav-link-item">Integrate</a>
+        <a href="https://github.com/chrisnwasike/risk-oracle" class="nav-link-item nav-cta" style="width:fit-content" target="_blank" rel="noopener noreferrer">GitHub →</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ════════════
+       HERO
+  ════════════════ -->
+  <section id="hero">
+    <div class="container">
+      <div class="row align-items-center gy-5">
+
+        <!-- Text side -->
+        <div class="col-lg-6" data-reveal>
+          <div class="hero-eyebrow">Live on Robinhood Chain Testnet</div>
+          <h1 class="hero-title">
+            The Safety Layer<br>for <span class="accent">DeFi</span>
+          </h1>
+          <p class="hero-sub">
+            Deterministic behavioral classification — protecting protocols without KYC, without centralization, without compromise.
+          </p>
+          <div class="d-flex flex-wrap gap-3">
+            <a href="https://github.com/chrisnwasike/risk-oracle" class="btn-ro btn-primary-ro" target="_blank" rel="noopener noreferrer">
+              View on GitHub →
+            </a>
+            <a href="#integration" class="btn-ro btn-ghost-ro">Integrate Now</a>
+          </div>
+        </div>
+
+        <!-- Visual side -->
+        <div class="col-lg-6 d-none d-lg-flex justify-content-center" data-reveal>
+          <div class="hero-visual parallax-target" style="max-width:420px; width:100%">
+            <div class="hero-card" style="position:relative;">
+              <div class="floating-badge badge-safe">✓ Action Permitted — Tier 3</div>
+              <div class="hero-card-header">
+                <div class="dot dot-r"></div>
+                <div class="dot dot-y"></div>
+                <div class="dot dot-g"></div>
+                <span style="font-size:0.72rem; color:var(--c-text-muted); margin-left:10px; font-family:monospace;">RiskOracle.sol</span>
+              </div>
+              <pre><span class="kw">interface</span> <span class="fn">IRiskOracle</span> {
+  <span class="kw">function</span> <span class="fn">can</span>(
+    <span class="kw">address</span> wallet,
+    <span class="kw">uint8</span>   actionType
+  ) <span class="kw">external view returns</span> (<span class="kw">bool</span>);
+}
+
+<span class="cm">// Gate risky action by tier</span>
+<span class="fn">require</span>(
+  oracle.<span class="fn">can</span>(msg.sender, <span class="num">1</span>),
+  <span class="str">"Need Tier 2+"</span>
+);</pre>
+              <div class="floating-badge badge-tier">🛡️ Wallet → Tier 3 Trusted</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       PROBLEM
+  ════════════════ -->
+  <section id="problem" class="section">
+    <div class="container">
+      <div class="row mb-5" data-reveal>
+        <div class="col-lg-6">
+          <div class="section-label">The Problem</div>
+          <h2 class="section-title">DeFi Loses Billions Because It Can't Tell Good From Bad</h2>
+          <div class="divider"></div>
+          <p class="section-sub">Flash loan attacks, rug pulls, and bot manipulation drain protocols. There has been no behavioral gate — until now.</p>
+        </div>
+      </div>
+
+      <div class="feature-grid stagger-parent">
+        <div class="glass-card feature-card" data-reveal>
+          <div class="feature-icon">⚠️</div>
+          <h3>$3.8B Lost in 2024</h3>
+          <p>Flash loan attacks and rug pulls continue to drain protocols because any wallet can perform any action — instantly.</p>
+        </div>
+        <div class="glass-card feature-card" data-reveal>
+          <div class="feature-icon">🔒</div>
+          <h3>KYC Destroys DeFi</h3>
+          <p>Traditional risk solutions require identity verification, stripping away the permissionless foundation that makes DeFi valuable.</p>
+        </div>
+        <div class="glass-card feature-card" data-reveal>
+          <div class="feature-icon">🏢</div>
+          <h3>Centralized Black Boxes</h3>
+          <p>Existing scoring services are opaque, expensive, and a single point of failure. Protocols deserve better infrastructure.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       HOW IT WORKS
+  ════════════════ -->
+  <section id="how" class="section" style="padding-top:0">
+    <div class="container">
+      <div class="row justify-content-center mb-5" data-reveal>
+        <div class="col-lg-7 text-center">
+          <div class="section-label">How It Works</div>
+          <h2 class="section-title">Simple. Deterministic. Transparent.</h2>
+          <p class="section-sub mx-auto">Same input always produces the same output. No ML black boxes — just auditable on-chain rules that anyone can verify.</p>
+        </div>
+      </div>
+
+      <div class="steps-wrapper" data-reveal>
+        <div class="steps-grid stagger-parent">
+          <div class="step-item" data-reveal>
+            <div class="step-num">1</div>
+            <h3>Observe Behavior</h3>
+            <p>Off-chain indexer monitors wallet transaction patterns — no personal data, just on-chain signals.</p>
+          </div>
+          <div class="step-item" data-reveal>
+            <div class="step-num">2</div>
+            <h3>Classify Deterministically</h3>
+            <p>Explicit, auditable rule engine. No ML. Same input = same output — always.</p>
+          </div>
+          <div class="step-item" data-reveal>
+            <div class="step-num">3</div>
+            <h3>Gate On-Chain</h3>
+            <p>Protocols query: "Can this wallet do this?" The oracle responds: yes or no. Three lines of code.</p>
+          </div>
+          <div class="step-item" data-reveal>
+            <div class="step-num">4</div>
+            <h3>Cross-Protocol Trust</h3>
+            <p>Tier earned on one protocol carries across the ecosystem. Network effects compound safety.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       TIER SYSTEM
+  ════════════════ -->
+  <section id="tiers" class="section">
+    <div class="container">
+      <div class="row justify-content-between align-items-end mb-5" data-reveal>
+        <div class="col-lg-6">
+          <div class="section-label">Classification</div>
+          <h2 class="section-title">Five Tiers. Behavior-Based. Auditable.</h2>
+          <p class="section-sub">Classification driven by on-chain patterns — not identity, not profit, not luck.</p>
+        </div>
+      </div>
+
+      <div class="tier-table-wrap" data-reveal>
+        <div class="tier-head">
+          <div>Tier</div>
+          <div>Status</div>
+          <div>Meaning</div>
+          <div>Requirements</div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-badge tier-0">0</div>
+          <div class="tier-name">Unknown</div>
+          <div class="tier-desc">New wallet or insufficient data</div>
+          <div class="tier-req">No transaction history</div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-badge tier-1">1</div>
+          <div class="tier-name">Restricted</div>
+          <div class="tier-desc">Suspicious behavior detected</div>
+          <div class="tier-req">Flip trading, impulse patterns</div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-badge tier-2">2</div>
+          <div class="tier-name">Standard</div>
+          <div class="tier-desc">Normal usage patterns observed</div>
+          <div class="tier-req">3+ txs · 1+ week · clean</div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-badge tier-3">3</div>
+          <div class="tier-name">Trusted</div>
+          <div class="tier-desc">Stable &amp; consistent behavior</div>
+          <div class="tier-req">10+ txs · 2+ weeks</div>
+        </div>
+        <div class="tier-row">
+          <div class="tier-badge tier-4">4</div>
+          <div class="tier-name">Advanced</div>
+          <div class="tier-desc">Long-term trusted actor</div>
+          <div class="tier-req">30+ txs · 3+ months</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       CODE / INTEGRATION
+  ════════════════ -->
+  <section id="integration" class="code-section-bg">
+    <div class="container">
+      <div class="row justify-content-center mb-5" data-reveal>
+        <div class="col-lg-7 text-center">
+          <div class="section-label">Integration</div>
+          <h2 class="section-title">Live in Minutes. Literally.</h2>
+          <p class="section-sub mx-auto">Three lines of Solidity. One SDK call. Full tier-gating activated across your entire protocol.</p>
+        </div>
+      </div>
+
+      <div class="row g-4" data-reveal>
+        <div class="col-md-6">
+          <div class="code-card-ro">
+            <div class="code-card-header">
+              <div class="code-dots">
+                <div class="dot dot-r"></div>
+                <div class="dot dot-y"></div>
+                <div class="dot dot-g"></div>
+              </div>
+              <span class="code-lang">Solidity</span>
+            </div>
+            <div class="code-body">
+              <pre><span class="kw">interface</span> <span class="fn">IRiskOracle</span> {
+  <span class="kw">function</span> <span class="fn">can</span>(<span class="kw">address</span> wallet, <span class="kw">uint8</span> actionType)
+    <span class="kw">external view returns</span> (<span class="kw">bool</span>);
+}
+
+<span class="kw">contract</span> <span class="fn">MyProtocol</span> {
+  <span class="fn">IRiskOracle</span> oracle = <span class="fn">IRiskOracle</span>(<span class="str">0x5352...</span>);
+
+  <span class="kw">function</span> <span class="fn">trade</span>() <span class="kw">external</span> {
+    <span class="cm">// Gate risky action by tier</span>
+    <span class="fn">require</span>(
+      oracle.<span class="fn">can</span>(msg.sender, <span class="num">1</span>),
+      <span class="str">"Need Tier 2+"</span>
+    );
+    <span class="cm">// ... your trading logic</span>
+  }
+}</pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="code-card-ro">
+            <div class="code-card-header">
+              <div class="code-dots">
+                <div class="dot dot-r"></div>
+                <div class="dot dot-y"></div>
+                <div class="dot dot-g"></div>
+              </div>
+              <span class="code-lang">TypeScript</span>
+            </div>
+            <div class="code-body">
+              <pre><span class="kw">import</span> { <span class="fn">createClient</span>, ActionType }
+  <span class="kw">from</span> <span class="str">'@risk-oracle/sdk'</span>;
+
+<span class="kw">const</span> client = <span class="fn">createClient</span>();
+
+<span class="cm">// Check if wallet can trade</span>
+<span class="kw">const</span> canTrade = <span class="kw">await</span> client.<span class="fn">can</span>(
+  <span class="str">'0x1234...'</span>,
+  ActionType.TRADE
+);
+
+<span class="kw">if</span> (!canTrade) {
+  <span class="kw">throw new</span> <span class="fn">Error</span>(<span class="str">'Insufficient tier'</span>);
+}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="text-center mt-5" data-reveal>
+        <a href="https://github.com/chrisnwasike/risk-oracle#integration" class="btn-ro btn-primary-ro" target="_blank" rel="noopener noreferrer">
+          View Full Documentation →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       EXAMPLES
+  ════════════════ -->
+  <section class="section">
+    <div class="container">
+      <div class="row justify-content-center mb-5" data-reveal>
+        <div class="col-lg-6 text-center">
+          <div class="section-label">Examples</div>
+          <h2 class="section-title">Reference Implementations</h2>
+          <p class="section-sub mx-auto">Common DeFi patterns, tier-gated and production-ready for the ecosystem.</p>
+        </div>
+      </div>
+
+      <div class="row g-4 stagger-parent">
+        <div class="col-md-4" data-reveal>
+          <div class="glass-card partner-card-ro h-100">
+            <span class="partner-icon">💱</span>
+            <h3>SafeSwap DEX</h3>
+            <p>Tier-gated trading limits block flash loan attacks before they can execute on-chain.</p>
+          </div>
+        </div>
+        <div class="col-md-4" data-reveal>
+          <div class="glass-card partner-card-ro h-100">
+            <span class="partner-icon">🏦</span>
+            <h3>Tiered Lending</h3>
+            <p>Borrow limits scale proportionally with wallet trust level — automatically, no manual review.</p>
+          </div>
+        </div>
+        <div class="col-md-4" data-reveal>
+          <div class="glass-card partner-card-ro h-100">
+            <span class="partner-icon">🗳️</span>
+            <h3>DAO Governance</h3>
+            <p>Proposal creation gated to Tier 3+ wallets. Sybil attacks and spam proposals, blocked.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       FAQ
+  ════════════════ -->
+  <section class="section" style="padding-top:0">
+    <div class="container">
+      <div class="row justify-content-center mb-5" data-reveal>
+        <div class="col-lg-6 text-center">
+          <div class="section-label">FAQ</div>
+          <h2 class="section-title">Common Questions</h2>
+        </div>
+      </div>
+
+      <div class="faq-wrap" data-reveal>
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Is Risk Oracle truly permissionless? <div class="faq-icon" aria-hidden="true">+</div></button>
+          <div class="faq-a" role="region"><div class="faq-a-inner">Yes. Risk Oracle requires no KYC, no sign-up, and no identity verification. Classification is based entirely on on-chain behavioral patterns — your wallet's actions speak for themselves.</div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">How deterministic is "deterministic"? <div class="faq-icon" aria-hidden="true">+</div></button>
+          <div class="faq-a" role="region"><div class="faq-a-inner">Completely. The rule engine is a pure function: given the same on-chain history, it will always produce the same tier. No probabilistic models, no ML inference, no human overrides. Every rule is publicly auditable.</div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">What chains are supported? <div class="faq-icon" aria-hidden="true">+</div></button>
+          <div class="faq-a" role="region"><div class="faq-a-inner">Currently deployed on Robinhood Chain Testnet. Mainnet and multi-chain support are on the roadmap. The indexer architecture is chain-agnostic and can extend to any EVM-compatible network.</div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Can tier decisions be appealed? <div class="faq-icon" aria-hidden="true">+</div></button>
+          <div class="faq-a" role="region"><div class="faq-a-inner">Tier classifications are deterministic and based on observable behavior. Wallets that improve their behavioral patterns will naturally see their tier update in subsequent classification cycles — no manual appeals needed.</div></div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-q" aria-expanded="false">Is the source code open? <div class="faq-icon" aria-hidden="true">+</div></button>
+          <div class="faq-a" role="region"><div class="faq-a-inner">100%. Everything — the smart contracts, the off-chain indexer, the rule engine, and the SDK — is open source under the MIT license on GitHub. Audit it, fork it, contribute to it.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       CTA
+  ════════════════ -->
+  <section class="section" style="padding-top:0">
+    <div class="container">
+      <div class="cta-banner" data-reveal>
+        <h2>Ready to Protect Your Protocol?</h2>
+        <p>Join protocols building safer DeFi — on-chain, permissionless, today.</p>
+        <div class="d-flex flex-wrap gap-3 justify-content-center">
+          <a href="https://github.com/chrisnwasike/risk-oracle" class="btn-ro btn-white" target="_blank" rel="noopener noreferrer">
+            Get Started on GitHub
+          </a>
+          <a href="https://twitter.com/riskoracle" class="btn-ro btn-outline-white" target="_blank" rel="noopener noreferrer">
+            Follow on Twitter
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════════
+       FOOTER
+  ════════════════ -->
+  <footer>
+    <div class="container">
+      <div class="row g-5">
+        <div class="col-lg-4 footer-brand">
+          <div class="nav-logo mb-3">
+            <div class="nav-logo-icon">🛡️</div>
+            Risk Oracle
+          </div>
+          <p>Behavioral safety layer for DeFi. Open source, permissionless, deterministic. Built from Lagos, Nigeria 🇳🇬</p>
+          <div class="d-flex flex-wrap gap-2 mt-4">
+            <a href="https://github.com/chrisnwasike/risk-oracle" class="social-pill" target="_blank" rel="noopener noreferrer">📦 GitHub</a>
+            <a href="https://twitter.com/riskoracle" class="social-pill" target="_blank" rel="noopener noreferrer">𝕏 Twitter</a>
+            <a href="https://discord.gg/riskoracle" class="social-pill" target="_blank" rel="noopener noreferrer">💬 Discord</a>
+          </div>
+        </div>
+
+        <div class="col-6 col-lg-2 offset-lg-1">
+          <div class="footer-heading">Product</div>
+          <ul class="footer-links">
+            <li><a href="https://github.com/chrisnwasike/risk-oracle" target="_blank" rel="noopener noreferrer">GitHub</a></li>
+            <li><a href="https://github.com/chrisnwasike/risk-oracle#documentation" target="_blank" rel="noopener noreferrer">Documentation</a></li>
+            <li><a href="https://github.com/chrisnwasike/risk-oracle/tree/main/examples" target="_blank" rel="noopener noreferrer">Examples</a></li>
+            <li><a href="https://explorer.testnet.chain.robinhood.com/address/0x53520A628e165D195F9F0A279044533F6D02eFd6" target="_blank" rel="noopener noreferrer">Contract</a></li>
+          </ul>
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <div class="footer-heading">Resources</div>
+          <ul class="footer-links">
+            <li><a href="https://github.com/chrisnwasike/risk-oracle#integration" target="_blank" rel="noopener noreferrer">Integration Guide</a></li>
+            <li><a href="https://github.com/chrisnwasike/risk-oracle#classification-rules" target="_blank" rel="noopener noreferrer">Classification Rules</a></li>
+            <li><a href="https://github.com/chrisnwasike/risk-oracle/issues" target="_blank" rel="noopener noreferrer">Support</a></li>
+          </ul>
+        </div>
+
+        <div class="col-6 col-lg-2">
+          <div class="footer-heading">Network</div>
+          <ul class="footer-links">
+            <li><a href="https://robinhood.com/crypto/wallet" target="_blank" rel="noopener noreferrer">Robinhood Chain</a></li>
+            <li><a href="https://explorer.testnet.chain.robinhood.com" target="_blank" rel="noopener noreferrer">Block Explorer</a></li>
+            <li><a href="https://faucet.testnet.chain.robinhood.com" target="_blank" rel="noopener noreferrer">Testnet Faucet</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>© 2026 Risk Oracle · MIT License</span>
+        <span>Contract: <span class="code-addr">0x53520A628…eFd6</span></span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+  <script>
+    /* ════════════════════════════
+       NAVBAR scroll transition
+    ═════════════════════════════ */
+    const navbar = document.getElementById('navbar');
+
+    function updateNavbar() {
+      navbar.classList.toggle('scrolled', window.scrollY > 60);
+    }
+
+    window.addEventListener('scroll', updateNavbar, { passive: true });
+    updateNavbar();
+
+    /* ════════════════════════════
+       MOBILE MENU
+    ═════════════════════════════ */
+    const mobileMenu   = document.getElementById('mobileMenu');
+    const mobileToggle = document.getElementById('mobileToggle');
+
+    if (mobileToggle && mobileMenu) {
+      mobileToggle.addEventListener('click', () => {
+        const isOpen = mobileMenu.style.display !== 'none';
+        mobileMenu.style.display = isOpen ? 'none' : 'block';
+        mobileToggle.setAttribute('aria-expanded', String(!isOpen));
+      });
+
+      mobileMenu.querySelectorAll('a').forEach(a => {
+        a.addEventListener('click', () => {
+          mobileMenu.style.display = 'none';
+          mobileToggle.setAttribute('aria-expanded', 'false');
+        });
+      });
+    }
+
+    /* ════════════════════════════
+       SCROLL REVEAL — staggered
+    ═════════════════════════════ */
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (!prefersReducedMotion) {
+      const revealEls = document.querySelectorAll('[data-reveal]');
+
+      const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+          if (!entry.isIntersecting) return;
+
+          const parent = entry.target.closest('.stagger-parent');
+          if (parent) {
+            const siblings = Array.from(parent.querySelectorAll('[data-reveal]'));
+            const idx = siblings.indexOf(entry.target);
+            entry.target.style.transitionDelay = `${idx * 80}ms`;
+          }
+
+          entry.target.dataset.reveal = 'visible';
+          revealObserver.unobserve(entry.target);
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -48px 0px' });
+
+      revealEls.forEach(el => revealObserver.observe(el));
+    } else {
+      document.querySelectorAll('[data-reveal]').forEach(el => {
+        el.dataset.reveal = 'visible';
+      });
+    }
+
+    /* ════════════════════════════
+       PARALLAX-LITE — hero only
+       Single rAF per scroll tick,
+       no continuous loop.
+    ═════════════════════════════ */
+    if (!prefersReducedMotion) {
+      const parallaxEl  = document.querySelector('.parallax-target');
+      const heroSection = document.getElementById('hero');
+
+      if (parallaxEl && heroSection) {
+        let ticking = false;
+
+        function applyParallax() {
+          const r = heroSection.getBoundingClientRect();
+          if (r.bottom > 0 && r.top < window.innerHeight) {
+            const progress = Math.max(0, Math.min(1, -r.top / r.height));
+            const ty = Math.round(progress * 30); // max 30px — tasteful
+            parallaxEl.style.transform = `translateY(${ty}px)`;
+          }
+          ticking = false;
+        }
+
+        window.addEventListener('scroll', () => {
+          if (!ticking) {
+            requestAnimationFrame(applyParallax);
+            ticking = true;
+          }
+        }, { passive: true });
+      }
+    }
+
+    /* ════════════════════════════
+       FAQ ACCORDION
+    ═════════════════════════════ */
+    document.querySelectorAll('.faq-q').forEach(q => {
+      q.addEventListener('click', () => {
+        const item    = q.closest('.faq-item');
+        const wasOpen = item.classList.contains('open');
+        document.querySelectorAll('.faq-item.open').forEach(i => {
+          i.classList.remove('open');
+          i.querySelector('.faq-q').setAttribute('aria-expanded', 'false');
+        });
+        if (!wasOpen) {
+          item.classList.add('open');
+          q.setAttribute('aria-expanded', 'true');
+        }
+      });
+    });
+
+    /* ════════════════════════════
+       SMOOTH SCROLL
+    ═════════════════════════════ */
+    document.querySelectorAll('a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        const target = document.querySelector(a.getAttribute('href'));
+        if (target) {
+          e.preventDefault();
+          const offset = navbar.offsetHeight + 16;
+          window.scrollTo({
+            top: target.getBoundingClientRect().top + window.scrollY - offset,
+            behavior: 'smooth'
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
