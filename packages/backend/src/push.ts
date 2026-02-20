@@ -60,7 +60,7 @@ async function pushTiersToChain() {
 
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
-    console.log(`\n  Batch ${i + 1}/${batches.length} — ${batch.length} wallets`);
+    console.log(`\n  Batch ${i + 1}/${batches.length} - ${batch.length} wallets`);
 
     const addresses = batch.map(r => r.address);
     const tiers = batch.map(r => r.tier);
