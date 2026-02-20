@@ -1,0 +1,12 @@
+{
+    "name": "@risk-oracle/contracts",
+    "author": "Chris Nwasike",
+    "version": "0.1.0",
+    "private": true,
+    "scripts": {
+        "build": "forge build",
+        "test": "forge test -vv",
+        "deploy:testnet": "forge script script/Deploy.s.sol --rpc-url $RH_RPC_URL --broadcast",
+        "verify": "forge verify-contract $CONTRACT_ADDRESS src/RiskOracle.sol:RiskOracle --chain-id 46630"
+    }
+}

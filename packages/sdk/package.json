@@ -1,0 +1,35 @@
+{
+  "name": "@risk-oracle/sdk",
+  "author": "Chris Nwasike",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for Risk Oracle integration",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublish": "npm run build"
+  },
+  "keywords": [
+    "defi",
+    "oracle",
+    "security",
+    "robinhood-chain",
+    "arbitrum"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "ethers": "^6.9.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6"
+  },
+  "peerDependencies": {
+    "ethers": "^6.0.0"
+  }
+}

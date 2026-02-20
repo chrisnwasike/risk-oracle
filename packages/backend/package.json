@@ -1,0 +1,44 @@
+{
+  "name": "risk-oracle",
+  "version": "1.0.0",
+  "description": "Deterministic Risk Tier Oracle Middleware",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "nodemon --exec node_modules\\.bin\\ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "seed": "node_modules\\.bin\\ts-node src/seed.ts",
+    "classify": "node_modules\\.bin\\ts-node src/classify.ts",
+    "push": "node_modules\\.bin\\ts-node src/push.ts",
+    "query": "node_modules\\.bin\\ts-node src/query.ts"
+  },
+  "keywords": [
+    "blockchain",
+    "oracle",
+    "risk"
+  ],
+  "author": "Chris Nwasike",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "overrides": {
+    "prisma": "5.22.0",
+    "@prisma/client": "5.22.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.2.3",
+    "nodemon": "^3.1.11",
+    "prisma": "5.22.0",
+    "ts-node": "^10.9.2",
+    "turbo": "^2.8.10",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@prisma/client": "5.22.0",
+    "dotenv": "^17.3.1",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1"
+  }
+}

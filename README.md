@@ -1,285 +1,165 @@
-# Risk Oracle for the Robinhood Chain
+# Risk Oracle
 
-Deterministic Risk Tier Oracle Middleware for Robinhood Chain and other EVM chains. Classifies wallet behavior into safety tiers (0-4) that protocols can use to gate financial actions.
+> Deterministic behavioral classification for DeFi safety
 
-## What This Is
+[![CI](https://github.com/chrisnwasike/risk-oracle/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisnwasike/risk-oracle/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Discord](https://img.shields.io/discord/YOUR_DISCORD_ID?label=discord)](https://discord.gg/riskoracle)
 
-A Robinhood Chain infrastructure primitive that:
-- Observes wallet transaction behavior off-chain
-- Classifies wallets on the Robinhood Chain into deterministic tiers (0=Unknown, 1=Restricted, 2=Standard, 3=Trusted, 4=Advanced)
-- Serves tiers on-chain via a minimal read-only oracle contract
-- Enables protocols to safely allow/deny actions based on behavioral stability
+Risk Oracle classifies wallet behavior into deterministic tiers (0-4) that protocols use to gate financial actions. Think of it as a behavioral credit score for DeFi, but permissionless and transparent.
 
-**This is NOT:**
-- A dashboard or UI
-- A reputation system
-- A scoring algorithm
-- Analytics or gamification
+## 🎯 What Problem Does This Solve?
 
-**This IS:**
-- A safety gate for protocols on the Robinhood Chain
-- A dependency other protocols integrate to operate safely
+DeFi protocols face a dilemma:
+- **Without gates:** Exploiters, bots, and rug pullers freely interact
+- **With KYC:** Kills permissionless nature of DeFi
+- **With centralized risk scoring:** Single point of failure, opaque
 
-## Architecture
+**Risk Oracle solves this** by providing deterministic, on-chain behavioral tiers that protocols can trust.
+
+## 🏗️ How It Works
 
 ```
-PostgreSQL Database → Backend Classifier → Smart Contract Oracle
-     (tx history)      (deterministic        (on-chain reads)
-                        tier assignment)
+User Behavior → Off-chain Classification → On-chain Oracle → Protocol Gates Actions
 ```
 
-**Off-chain:**
-- Indexer stores wallet transactions
-- Rule engine classifies behavior patterns
-- Backend pushes tier updates in batches
+1. **Off-chain indexer** observes wallet transactions
+2. **Classification engine** applies deterministic rules (no ML, no subjectivity)
+3. **Backend pushes** tier updates to smart contract
+4. **Protocols query** `oracle.can(wallet, actionType)` before allowing actions
 
-**On-chain:**
-- Minimal oracle contract (`getTier`, `can`)
-- Protocols integrate via SDK/direct calls
+## ⚡ Quick Start
 
-## Classification Rules
+### For Protocol Developers
 
-Tiers are deterministic state machine outputs based on:
-
-**Bad behaviors (caps tier):**
-- Flip trading (rapid buy/sell same asset)
-- Impulsive patterns (many txs in short windows)
-- High suspicious transaction ratio
-
-**Good behaviors (unlock progression):**
-- Account age
-- Transaction consistency over time
-- Stable behavioral patterns
-
-**Time-based trust:**
-- Tier 2: 3+ transactions, 1+ week
-- Tier 3: 10+ transactions, 2+ weeks, consistent activity
-- Tier 4: 30+ transactions, 3+ months, long-term stability
-
-## Installation
-
-### Prerequisites
-
-- Node.js 18+
-- PostgreSQL 15+
-- Git
-
-### Setup
-
-1. **Clone and install:**
 ```bash
-git clone <your-repo>
-cd risk-oracle
-npm install
+npm install @risk-oracle/sdk ethers
 ```
 
-2. **Configure environment:**
-```bash
-cp .env.example .env
-# Edit .env with your values
+```typescript
+import { createClient, ActionType } from '@risk-oracle/sdk';
+
+const client = createClient();
+const canTrade = await client.can('0x1234...', ActionType.TRADE);
 ```
 
-3. **Setup database:**
-```bash
-createdb risk_oracle
-npx prisma migrate dev
-```
-
-4. **Seed sample data:**
-```bash
-npm run seed
-```
-
-## Usage
-
-### Local Development
-
-**Start API server:**
-```bash
-npm run dev
-```
-
-**Classify wallets:**
-```bash
-npm run classify
-```
-
-**Push tiers to chain:**
-```bash
-npm run push
-```
-
-**Query chain tiers:**
-```bash
-npm run query
-```
-
-### API Endpoints
-
-**GET `/tier/:address`**
-- Returns tier and explanation for a wallet
-- Rate limited: 100 req/min
-- Example: `GET /tier/0x1234...`
-
-Response:
-```json
-{
-  "address": "0x1234...",
-  "tier": 2,
-  "explanation": "Tier 2: 5 transactions over 10 days - standard behavior"
-}
-```
-
-**GET `/wallets`**
-- Lists all wallets and their tiers
-- For debugging only
-
-**GET `/health`**
-- Health check endpoint
-
-## Smart Contract
-
-Deployed on Robinhood Chain Testnet: `0x53520A628e165D195F9F0A279044533F6D02eFd6`
-
-### Integration Example
+### For Solidity Contracts
 
 ```solidity
 interface IRiskOracle {
-  function getTier(address wallet) external view returns (uint8);
-  function can(address wallet, uint8 actionType) external view returns (bool);
+    function can(address wallet, uint8 actionType) external view returns (bool);
 }
 
 contract MyProtocol {
-  IRiskOracle oracle = IRiskOracle(0x5352...eFd6);
-  
-  function trade() external {
-    require(oracle.can(msg.sender, 1), "Insufficient tier");
-    // ... trading logic
-  }
+    IRiskOracle oracle = IRiskOracle(0x53520A628e165D195F9F0A279044533F6D02eFd6);
+    
+    function trade() external {
+        require(oracle.can(msg.sender, 1), "Insufficient tier");
+        // ... your logic
+    }
 }
 ```
 
-### Action Types
+## 📊 Tier System
 
-- `0` = BASIC (any tier)
-- `1` = TRADE (tier 2+)
-- `2` = LEVERAGE (tier 3+)
-- `3` = GOVERN (tier 3+)
-- `4` = WITHDRAW (tier 2+)
+| Tier | Name | Meaning | Requirements |
+|------|------|---------|--------------|
+| 0 | Unknown | New or insufficient data | No history |
+| 1 | Restricted | Suspicious behavior | Flip trading, impulse patterns |
+| 2 | Standard | Normal usage | 3+ txs, 1+ week, clean behavior |
+| 3 | Trusted | Stable & consistent | 10+ txs, 2+ weeks, consistent activity |
+| 4 | Advanced | Long-term trusted | 30+ txs, 3+ months, stable history |
 
-## Project Structure
+## 🚀 Deployed Contracts
 
-```
-risk-oracle/
-├── src/
-│   ├── index.ts          # API server
-│   ├── classifier.ts     # Tier classification engine
-│   ├── chain.ts          # Blockchain interaction
-│   ├── db.ts             # Database client
-│   ├── config.ts         # Environment validation
-│   ├── seed.ts           # Sample data generator
-│   ├── classify.ts       # Batch classification script
-│   ├── push.ts           # Push tiers to chain
-│   ├── query.ts          # Query chain tiers
-│   ├── middleware/
-│   │   └── validation.ts # API validation & rate limiting
-│   └── abi/
-│       └── RiskOracle.json
-├── contracts/
-│   ├── src/
-│   │   └── RiskOracle.sol
-│   └── test/
-│       └── RiskOracle.t.sol
-├── prisma/
-│   └── schema.prisma
-└── README.md
-```
+| Network | Address | Explorer |
+|---------|---------|----------|
+| Robinhood Chain Testnet | `0x53520A628e165D195F9F0A279044533F6D02eFd6` | [View](https://explorer.testnet.chain.robinhood.com/address/0x53520A628e165D195F9F0A279044533F6D02eFd6) |
 
-## Testing
+## 📦 Packages
 
-**Backend tests:** (TODO in next phase)
+This monorepo contains:
+
+- **[@risk-oracle/sdk](./packages/sdk)** - TypeScript SDK for integration
+- **[@risk-oracle/contracts](./packages/contracts)** - Solidity oracle contracts
+- **[@risk-oracle/backend](./packages/backend)** - Classification engine & API
+- **[examples/](./examples/)** - Integration examples (DEX, lending, DAO)
+
+## 🛠️ Development
+
 ```bash
-npm test
+# Install dependencies
+npm install
+
+# Run backend API
+cd packages/backend
+npm run dev
+
+# Run contract tests
+cd packages/contracts
+forge test
+
+# Build SDK
+cd packages/sdk
+npm run build
 ```
 
-**Contract tests:**
-```bash
-cd contracts
-forge test -vv
-```
+## 📖 Documentation
 
-## Deployment
+- [Integration Guide](./docs/integration.md)
+- [Classification Rules](./docs/classification.md)
+- [API Reference](./docs/api.md)
+- [Example Contracts](./examples/)
 
-### Deploy Contract
+## 🤝 Integration Partners
 
-1. Get Robinhood Chain testnet ETH from faucet `https://faucet.testnet.chain.robinhood.com/`
-2. Deploy:
-```bash
-cd contracts
-forge create src/RiskOracle.sol:RiskOracle \
-  --rpc-url $RH_RPC_URL \
-  --private-key $PRIVATE_KEY \
-  --broadcast
-```
+Currently integrated with:
+- *Add your first protocol partners here*
 
-3. Update `.env` with deployed address
+Interested in integrating? [Open an issue](https://github.com/chrisnwasike/risk-oracle/issues/new) or DM us on [Twitter](https://twitter.com/riskoracle).
 
-### Production Checklist
+## 🎓 Why "Deterministic"?
 
-- [ ] Use separate wallet for contract owner (not same as deployer)
-- [ ] Set `NODE_ENV=production` to disable query logging
-- [ ] Use proper rate limiting (Redis-based)
-- [ ] Setup monitoring for tier updates
-- [ ] Enable transaction retry logic for push failures
-- [ ] Backup database regularly
-- [ ] Monitor gas prices before batch updates
-- [ ] Setup alerts for classification anomalies
+Unlike ML-based risk scoring, Risk Oracle uses explicit, auditable rules:
+- ✅ Same inputs always produce same outputs
+- ✅ No black-box decisions
+- ✅ Anti-gaming resistant by design
+- ✅ Fully transparent logic
 
-## Security Considerations
+## 🔐 Security
 
-**Anti-gaming:**
-- Rules designed to resist farming behavior
-- Time requirements cannot be rushed
-- Bad behavior permanently caps tier
+- Audited by: *TBD*
+- Bug bounty: *TBD*
+- Security policy: [SECURITY.md](./SECURITY.md)
 
-**Contract security:**
-- Owner-only tier updates
-- Input validation on all functions
-- Minimal attack surface (read-only for protocols)
+## 💰 Funding
 
-**Backend security:**
-- Rate limiting on API endpoints
-- Input validation on all endpoints
-- Environment variable validation
-- Graceful error handling
+Risk Oracle is open-source infrastructure. Supported by:
+- Gitcoin Grants
+- Arbitrum Foundation
+- *Add other grant sources*
 
-## Performance
+[Support us on Gitcoin](https://gitcoin.co/grants/your-id)
 
-**Database:**
-- Indexes on `address`, `tier`, `walletId`, `timestamp`
-- Prisma connection pooling
-- Optimized queries for classification
+## 📄 License
 
-**Blockchain:**
-- Batch updates (up to 200 wallets per transaction)
-- Gas-efficient storage (simple mapping)
-- Read operations ~5k gas
+MIT - see [LICENSE](./LICENSE)
 
-**Typical costs:**
-- 5 wallets: ~126k gas
-- 50 wallets: ~600k gas
-- 200 wallets: ~2.4M gas
+## 🙏 Acknowledgments
 
-## License
+Built on:
+- [Robinhood Chain](https://robinhood.com/crypto/wallet) (Arbitrum L2)
+- [Foundry](https://github.com/foundry-rs/foundry)
+- [Prisma](https://www.prisma.io/)
+- [ethers.js](https://docs.ethers.org/)
 
-MIT
+## 📬 Contact
 
-## Contributing
+- Twitter: [@riskoracle](https://twitter.com/chrisnwasike)
+- Discord: [Join our server](https://discord.gg/chrisnwasike)
+- Email: chrisnwasike@gmail.com
+- Website: [riskoracle.io](https://riskoracle.io)
 
-This is infrastructure. Contributions must:
-1. Improve protocol safety gating
-2. Maintain determinism
-3. Resist gaming
-4. Remain minimal
+---
 
-No features that don't directly serve protocol integration.
+**Building the safety layer for DeFi, one tier at a time.** 🛡️
