@@ -96,7 +96,7 @@ Currently deployed on:
 
 ## API Reference
 
-See [full documentation](https://docs.riskoracle.io) for complete API reference.
+See [full documentation](https://chrisnwasike.github.io/risk-oracle/) for complete API reference.
 
 ## License
 
