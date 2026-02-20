@@ -2,9 +2,8 @@
 
 > Deterministic behavioral classification for DeFi safety
 
-[![CI](https://github.com/chrisnwasike/risk-oracle/actions/workflows/ci.yml/badge.svg)](https://github.com/chrisnwasike/risk-oracle/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Discord](https://img.shields.io/discord/YOUR_DISCORD_ID?label=discord)](https://discord.gg/riskoracle)
+[![GitHub stars](https://img.shields.io/github/stars/chrisnwasike/risk-oracle.svg)](https://github.com/chrisnwasike/risk-oracle/stargazers)
 
 Risk Oracle classifies wallet behavior into deterministic tiers (0-4) that protocols use to gate financial actions. Think of it as a behavioral credit score for DeFi, but permissionless and transparent.
 
