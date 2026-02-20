@@ -36,6 +36,22 @@ export const NETWORKS = {
   }
 };
 
+// Permissions object shape
+export interface Permissions {
+  basic: boolean;
+  trade: boolean;
+  leverage: boolean;
+  govern: boolean;
+  withdraw: boolean;
+}
+
+export interface WalletInfo {
+  address: string;
+  tier: number;
+  tierName: string;
+  permissions: Permissions;
+}
+
 /**
  * RiskOracle SDK Client
  */
@@ -53,13 +69,20 @@ export class RiskOracleClient {
     providerOrSigner: Provider | Signer,
     oracleAddress: string = NETWORKS.robinhoodTestnet.oracleAddress
   ) {
-    if ('provider' in providerOrSigner && providerOrSigner.provider) {
-      // It's a signer
+    // FIX: Use 'getAddress' to distinguish a Signer from a Provider.
+    // In ethers v6, Providers also have a 'provider' property (pointing to
+    // themselves), so checking 'provider' in x is not a reliable discriminator.
+    if ('getAddress' in providerOrSigner) {
+      // It's a Signer
       this.signer = providerOrSigner as Signer;
-      this.provider = providerOrSigner.provider!;
+      // Signer.provider may be null if the signer is not connected
+      if (!this.signer.provider) {
+        throw new Error('Signer must be connected to a provider');
+      }
+      this.provider = this.signer.provider;
       this.contract = new Contract(oracleAddress, RISK_ORACLE_ABI, this.signer);
     } else {
-      // It's a provider
+      // It's a Provider
       this.provider = providerOrSigner as Provider;
       this.contract = new Contract(oracleAddress, RISK_ORACLE_ABI, this.provider);
     }
@@ -82,7 +105,7 @@ export class RiskOracleClient {
    */
   async getTierName(address: string): Promise<string> {
     const tier = await this.getTier(address);
-    return TIER_NAMES[tier] || 'Unknown';
+    return TIER_NAMES[tier] ?? 'Unknown';
   }
 
   /**
@@ -96,11 +119,11 @@ export class RiskOracleClient {
   }
 
   /**
-   * Check multiple actions at once
+   * Check all action permissions at once
    * @param address - Wallet address to check
    * @returns Object with all action permissions
    */
-  async getPermissions(address: string): Promise<Record<string, boolean>> {
+  async getPermissions(address: string): Promise<Permissions> {
     const [canBasic, canTrade, canLeverage, canGovern, canWithdraw] = await Promise.all([
       this.can(address, ActionType.BASIC),
       this.can(address, ActionType.TRADE),
@@ -122,7 +145,7 @@ export class RiskOracleClient {
    * Get full wallet info (tier + permissions)
    * @param address - Wallet address to check
    */
-  async getWalletInfo(address: string) {
+  async getWalletInfo(address: string): Promise<WalletInfo> {
     const [tier, permissions] = await Promise.all([
       this.getTier(address),
       this.getPermissions(address)
@@ -131,7 +154,7 @@ export class RiskOracleClient {
     return {
       address,
       tier,
-      tierName: TIER_NAMES[tier],
+      tierName: TIER_NAMES[tier] ?? 'Unknown',
       permissions
     };
   }
@@ -145,16 +168,16 @@ export class RiskOracleClient {
     if (!this.signer) {
       throw new Error('Signer required for setTier operation');
     }
-    if (tier < 0 || tier > 4) {
-      throw new Error('Tier must be between 0 and 4');
+    if (!Number.isInteger(tier) || tier < 0 || tier > 4) {
+      throw new Error('Tier must be an integer between 0 and 4');
     }
     return await this.contract.setTier(address, tier);
   }
 
   /**
    * Set tiers for multiple wallets in one transaction
-   * @param wallets - Array of wallet addresses
-   * @param tiers - Array of corresponding tiers
+   * @param wallets - Array of wallet addresses (max 200)
+   * @param tiers - Array of corresponding tiers (each 0-4)
    */
   async setTierBatch(
     wallets: string[],
@@ -164,19 +187,25 @@ export class RiskOracleClient {
       throw new Error('Signer required for setTierBatch operation');
     }
     if (wallets.length !== tiers.length) {
-      throw new Error('Wallets and tiers arrays must have same length');
+      throw new Error('Wallets and tiers arrays must have the same length');
     }
     if (wallets.length > 200) {
-      throw new Error('Batch size limited to 200 wallets');
+      throw new Error('Batch size is limited to 200 wallets');
+    }
+    // FIX: Validate every tier value, not just the array length.
+    for (let i = 0; i < tiers.length; i++) {
+      if (!Number.isInteger(tiers[i]) || tiers[i] < 0 || tiers[i] > 4) {
+        throw new Error(`Invalid tier value ${tiers[i]} at index ${i}. Must be an integer between 0 and 4`);
+      }
     }
     return await this.contract.setTierBatch(wallets, tiers);
   }
 }
 
 /**
- * Helper function to create a client with a JSON-RPC provider
- * @param rpcUrl - RPC endpoint URL
- * @param oracleAddress - Oracle contract address
+ * Helper function to create a read-only client with a JSON-RPC provider
+ * @param rpcUrl - RPC endpoint URL (defaults to Robinhood testnet)
+ * @param oracleAddress - Oracle contract address (defaults to Robinhood testnet)
  */
 export function createClient(
   rpcUrl: string = NETWORKS.robinhoodTestnet.rpcUrl,
@@ -187,11 +216,11 @@ export function createClient(
 }
 
 /**
- * Helper to check if an address is valid
+ * Check whether a string is a valid checksummed or lowercased Ethereum address
  */
 export function isValidAddress(address: string): boolean {
   return /^0x[a-fA-F0-9]{40}$/.test(address);
 }
 
-// Export everything
+// Export client as default
 export default RiskOracleClient;

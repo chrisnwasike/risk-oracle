@@ -5,10 +5,8 @@ import { classifyWallet, explainTier } from './classifier';
 import { validateAddress, simpleRateLimit } from './middleware/validation';
 import { validateEnv, config } from './config';
 
-// Load environment variables from .env file
 dotenv.config();
 
-// Validate required environment variables
 try {
   validateEnv();
 } catch (error: any) {
@@ -16,74 +14,60 @@ try {
   process.exit(1);
 }
 
-// Create Express application
 const app = express();
-
-// Middleware to parse JSON request bodies
 app.use(express.json());
 
-// Hello world endpoint
-app.get('/', (req: Request, res: Response) => {
-  res.json({ 
-    message: 'Risk Oracle API',
-    status: 'running'
-  });
+// ── Routes ────────────────────────────────────────────────────────────────
+
+app.get('/', (_req: Request, res: Response) => {
+  res.json({ message: 'Risk Oracle API', status: 'running' });
 });
 
-// Health check endpoint
-app.get('/health', (req: Request, res: Response) => {
-  res.json({ 
-    status: 'healthy',
-    timestamp: new Date().toISOString()
-  });
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-// Database test endpoint - list all wallets
-app.get('/wallets', async (req: Request, res: Response) => {
+/** List all classified wallets (primarily for debugging). */
+app.get('/wallets', async (_req: Request, res: Response) => {
   try {
     const wallets = await prisma.wallet.findMany({
-      include: {
-        _count: {
-          select: { transactions: true }
-        }
-      }
+      include: { _count: { select: { transactions: true } } }
     });
-    
+
     res.json({
-      count: wallets.length,
+      count:   wallets.length,
       wallets: wallets.map(w => ({
-        address: w.address,
-        tier: w.tier,
-        txCount: w.txCount,
+        address:          w.address,
+        tier:             w.tier,
+        txCount:          w.txCount,
         transactionsInDb: w._count.transactions,
-        firstSeen: w.firstSeen,
-        lastSeen: w.lastSeen
+        firstSeen:        w.firstSeen,
+        lastSeen:         w.lastSeen
       }))
     });
   } catch (error) {
+    console.error('Error listing wallets:', error);
     res.status(500).json({ error: 'Database query failed' });
   }
 });
 
-// Get tier for a specific wallet
-app.get('/tier/:address', 
-  simpleRateLimit(100, 60000), // 100 requests per minute
+/** Get the current tier for a specific wallet address. */
+app.get(
+  '/tier/:address',
+  simpleRateLimit(100, 60_000), // 100 requests per minute per IP
   validateAddress,
   async (req: Request, res: Response) => {
     try {
-      const address = Array.isArray(req.params.address) 
-        ? req.params.address[0] 
-        : req.params.address;
-      
-      // Classify in real-time (deterministic)
-      const tier = await classifyWallet(address.toLowerCase());
-      const explanation = await explainTier(address);
-      
-      res.json({
-        address,
-        tier,
-        explanation
-      });
+      // FIX: Express route params are always strings. The previous
+      // Array.isArray guard was dead code — removed.
+      const address = (req.params.address as string).toLowerCase();
+
+      const [tier, explanation] = await Promise.all([
+        classifyWallet(address),
+        explainTier(address)
+      ]);
+
+      res.json({ address, tier, explanation });
     } catch (error) {
       console.error('Error querying tier:', error);
       res.status(500).json({ error: 'Failed to classify wallet' });
@@ -91,32 +75,24 @@ app.get('/tier/:address',
   }
 );
 
-// Get port from environment or use default
+// ── Server startup ────────────────────────────────────────────────────────
+
 const PORT = config.server.port;
 
-// Start server
 const server = app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/health`);
 });
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('SIGTERM received. Closing server...');
+async function shutdown(signal: string) {
+  console.log(`\n${signal} received — shutting down gracefully...`);
   server.close(async () => {
-    console.log('Server closed. Disconnecting from database...');
     await prisma.$disconnect();
     console.log('Database disconnected. Exiting.');
     process.exit(0);
   });
-});
+}
 
-process.on('SIGINT', async () => {
-  console.log('\nSIGINT received. Closing server...');
-  server.close(async () => {
-    console.log('Server closed. Disconnecting from database...');
-    await prisma.$disconnect();
-    console.log('Database disconnected. Exiting.');
-    process.exit(0);
-  });
-});
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
