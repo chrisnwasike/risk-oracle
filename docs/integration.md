@@ -28,7 +28,7 @@ contract YourProtocol {
     
     constructor() {
         // Robinhood Chain Testnet
-        oracle = IRiskOracle(0x53520A628e165D195F9F0A279044533F6D02eFd6);
+        oracle = IRiskOracle(0xFb641c36EFD330a2b2909F1746dBdB218064B84F);
     }
 }
 ```

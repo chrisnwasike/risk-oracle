@@ -50,7 +50,7 @@ interface IRiskOracle {
 }
 
 contract MyProtocol {
-    IRiskOracle oracle = IRiskOracle(0x53520A628e165D195F9F0A279044533F6D02eFd6);
+    IRiskOracle oracle = IRiskOracle(0xFb641c36EFD330a2b2909F1746dBdB218064B84F);
     
     function trade() external {
         require(oracle.can(msg.sender, 1), "Insufficient tier");
@@ -73,7 +73,7 @@ contract MyProtocol {
 
 | Network | Address | Explorer |
 |---------|---------|----------|
-| Robinhood Chain Testnet | `0x53520A628e165D195F9F0A279044533F6D02eFd6` | [View](https://explorer.testnet.chain.robinhood.com/address/0x53520A628e165D195F9F0A279044533F6D02eFd6) |
+| Robinhood Chain Testnet | `0xFb641c36EFD330a2b2909F1746dBdB218064B84F` | [View](https://explorer.testnet.chain.robinhood.com/address/0xFb641c36EFD330a2b2909F1746dBdB218064B84F) |
 
 ## 📦 Packages
 

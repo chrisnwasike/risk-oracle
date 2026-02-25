@@ -30,11 +30,11 @@ export function getOracleReader() {
 export function getOracleWriter() {
   const rpcUrl = process.env.RPC_URL;
   const contractAddress = process.env.CONTRACT_ADDRESS;
-  const privateKey = process.env.PRIVATE_KEY;
+  const privateKey = process.env.UPDATER_PRIVATE_KEY;
 
   if (!rpcUrl) throw new Error('RPC_URL not set in .env');
   if (!contractAddress) throw new Error('CONTRACT_ADDRESS not set in .env');
-  if (!privateKey) throw new Error('PRIVATE_KEY not set in .env');
+  if (!privateKey) throw new Error('UPDATER_PRIVATE_KEY not set in .env');
 
   const provider = new ethers.JsonRpcProvider(rpcUrl);
 

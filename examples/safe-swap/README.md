@@ -28,5 +28,5 @@ swap.swap(tokenA, tokenB, 500 ether);
 
 ## Deploy
 ```bash
-forge create SafeSwap --constructor-args 0x53520A628e165D195F9F0A279044533F6D02eFd6
+forge create SafeSwap --constructor-args 0xFb641c36EFD330a2b2909F1746dBdB218064B84F
 ```

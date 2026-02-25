@@ -31,7 +31,7 @@ export const NETWORKS = {
   robinhoodTestnet: {
     chainId: 46630,
     rpcUrl: 'https://rpc.testnet.chain.robinhood.com',
-    oracleAddress: '0x53520A628e165D195F9F0A279044533F6D02eFd6',
+    oracleAddress: '0xFb641c36EFD330a2b2909F1746dBdB218064B84F',
     explorer: 'https://explorer.testnet.chain.robinhood.com'
   }
 };

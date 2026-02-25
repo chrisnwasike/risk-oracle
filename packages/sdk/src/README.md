@@ -64,7 +64,7 @@ interface IRiskOracle {
 }
 
 contract MyProtocol {
-    IRiskOracle oracle = IRiskOracle(0x53520A628e165D195F9F0A279044533F6D02eFd6);
+    IRiskOracle oracle = IRiskOracle(0xFb641c36EFD330a2b2909F1746dBdB218064B84F);
     
     function riskyAction() external {
         require(oracle.can(msg.sender, 1), "Need Tier 2+ to trade");
@@ -92,7 +92,7 @@ contract MyProtocol {
 ## Networks
 
 Currently deployed on:
-- **Robinhood Chain Testnet** - `0x53520A628e165D195F9F0A279044533F6D02eFd6`
+- **Robinhood Chain Testnet** - `0xFb641c36EFD330a2b2909F1746dBdB218064B84F`
 
 ## API Reference
 
